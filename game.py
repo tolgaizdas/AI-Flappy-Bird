@@ -1,15 +1,14 @@
 import pygame
 import random
-import pickle
 import numpy as np
 
-from collections import defaultdict
 from bird import Bird
 from pipe import Pipe
+from q import Q
 
 
 class Game:
-    def __init__(self, ai=True, load=False):
+    def __init__(self, discount_factor=0.8, epsilon=0.1, learning_rate=0.2, ai=True, load=False):
         self.ai = ai
 
         pygame.init()
@@ -41,40 +40,10 @@ class Game:
         self.font = pygame.font.Font(None, 36)
 
         self.actions = [0, 1]  # 0: Do nothing, 1: Jump
-        self.q_table = None
-        if load:
-            self.load_q_table()
-        else:
-            self.q_table = defaultdict(lambda: [0, 0])
+        self.epsilon = epsilon  #  Exploration rate
 
-        self.discount_factor = 0.8
-        self.epsilon = 0  # Exploration rate
-        self.learning_rate = 0.2
-
-    def choose_action(self, state):
-        if np.random.rand() < self.epsilon and self.time_elapsed > 1:
-            self.time_elapsed = 0
-            # Explore: choose a random action
-            return np.random.choice([0, 1], p=[0.75, 0.25])
-        else:
-            # Exploit: choose the best known action for this state
-            return np.argmax(self.q_table[state])
-
-    def learn(self, old_state, new_state, action, reward):
-        # Update Q-table
-        old_value = self.q_table[old_state][action]
-        max_new_value = max(self.q_table[new_state])
-        new_value = old_value + self.learning_rate * \
-            (reward + self.discount_factor * max_new_value - old_value)
-        self.q_table[old_state][action] = new_value
-
-    def load_q_table(self):
-        with open('q_table.pkl', 'rb') as f:
-            self.q_table = defaultdict(lambda: [0, 0], pickle.load(f))
-
-    def save_q_table(self):
-        with open('q_table.pkl', 'wb') as f:
-            pickle.dump(dict(self.q_table), f)
+        self.q = Q(actions=self.actions, default_value=0,
+                   discount_factor=discount_factor, learning_rate=learning_rate, load=load)
 
     def get_current_state(self):
         x = int(self.bottom_pipe.rect.x +
@@ -90,6 +59,13 @@ class Game:
         if new_state[1] < self.bird_radius and action == 0 or new_state[1] < self.gap - self.bird_radius and action == 1:  # Wrong action
             return -1
         return 1
+
+    def choose_action(self, state):
+        if np.random.rand() < self.epsilon and self.time_elapsed > 1:
+            self.time_elapsed = 0
+            return np.random.choice(self.actions, p=[0.75, 0.25])  # Exploration
+        else:
+            return np.argmax(self.q.q_table[state])  #  Exploitation
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -130,7 +106,7 @@ class Game:
 
             new_state = self.get_current_state()
             reward = self.get_reward(new_state, action)
-            self.learn(old_state, new_state, action, reward)
+            self.q.update_q_table(old_state, new_state, action, reward)
 
         if self.bird.rect.x > self.bottom_pipe.rect.x + self.pipe_width:
             self.score += 1
