@@ -64,7 +64,7 @@ class Game:
         self.q_table[old_state][action] = new_value
 
     def get_current_state(self):
-        x = int(self.bottom_pipe.rect.x - self.bird.rect.centerx)
+        x = int(self.bottom_pipe.rect.x + self.pipe_width - self.bird.rect.centerx)
         y = int(self.bottom_pipe.rect.y - self.bird.rect.centery)
         return (x, y, +self.game_over)
 
@@ -125,7 +125,7 @@ class Game:
 
             self.learn(old_state, new_state, action, reward)
 
-        if self.bird.rect.x > self.bottom_pipe.rect.x:
+        if self.bird.rect.x > self.bottom_pipe.rect.x + self.pipe_width:
             self.score += 1
             self.max_score = max(self.score, self.max_score)
             self.reset_pipe_positions()
@@ -168,11 +168,11 @@ class Game:
         self.window.fill("black")
         self.bird.draw(self.window)
 
+        self.temp_top_pipe.draw(self.window, "green")
+        self.temp_bottom_pipe.draw(self.window, "green")
+
         self.top_pipe.draw(self.window, "red")
         self.bottom_pipe.draw(self.window, "red")
-
-        self.temp_top_pipe.draw(self.window, "red")
-        self.temp_bottom_pipe.draw(self.window, "red")
 
         score_text = self.font.render(
             "Score: " + str(self.score), True, "white")
@@ -184,7 +184,7 @@ class Game:
             if self.bird.rect.centery > self.bottom_pipe.rect.y:
                 y *= -1
             pygame.draw.line(self.window, "lightgreen", (self.bird.rect.centerx,
-                            self.bird.rect.centery + y), (self.bottom_pipe.rect.x, self.bottom_pipe.rect.y), 2)
+                            self.bird.rect.centery + y), (self.bottom_pipe.rect.x + self.pipe_width, self.bottom_pipe.rect.y), 2)
             pygame.draw.line(self.window, "lightblue", (self.bird.rect.centerx,
                             self.bird.rect.centery), (self.bird.rect.centerx, self.bird.rect.centery + y), 2)
 
@@ -197,7 +197,7 @@ class Game:
         iteration = 1
         while running:
             if self.game_over:
-                print(iteration, "score:", self.score)
+                # print(iteration, "score:", self.score)
                 iteration += 1
                 self.reset_game()
                 self.game_over = False
