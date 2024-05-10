@@ -66,7 +66,7 @@ class Game:
     def get_current_state(self):
         x = int(self.bottom_pipe.rect.x + self.pipe_width - self.bird.rect.centerx)
         y = int(self.bottom_pipe.rect.y - self.bird.rect.centery)
-        return (x, y, +self.game_over)
+        return (x, y, self.game_over)
 
     def get_reward(self, new_state, action):
         if self.game_over:  # Game over
@@ -96,33 +96,26 @@ class Game:
         return False
 
     def update(self):
-        if not self.ai:  # Human player
-            self.bird.update()
-            self.top_pipe.update()
-            self.bottom_pipe.update()
-            self.temp_top_pipe.update()
-            self.temp_bottom_pipe.update()
+        self.bird.update()
+        self.top_pipe.update()
+        self.bottom_pipe.update()
+        self.temp_top_pipe.update()
+        self.temp_bottom_pipe.update()
+        self.game_over = self.is_over()
 
-            self.game_over = self.is_over()
+    def game_loop(self):
+        if not self.ai:  # Human player
+            self.update()
         else:  # AI player
             old_state = self.get_current_state()
 
             action = self.choose_action(old_state)
             if action == 1:
                 self.bird.velocity = self.jump_velocity
-
-            self.bird.update()
-            self.top_pipe.update()
-            self.bottom_pipe.update()
-            self.temp_top_pipe.update()
-            self.temp_bottom_pipe.update()
+            self.update()
 
             new_state = self.get_current_state()
-
-            self.game_over = self.is_over()
-
             reward = self.get_reward(new_state, action)
-
             self.learn(old_state, new_state, action, reward)
 
         if self.bird.rect.x > self.bottom_pipe.rect.x + self.pipe_width:
@@ -203,6 +196,6 @@ class Game:
                 self.game_over = False
 
             running = self.handle_events()
-            self.update()
+            self.game_loop()
             self.draw()
             self.time_elapsed += self.clock.tick(self.FPS) / 1000
