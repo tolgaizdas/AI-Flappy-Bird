@@ -1,14 +1,15 @@
 import pygame
 import random
-from collections import defaultdict
+import pickle
 import numpy as np
 
+from collections import defaultdict
 from bird import Bird
 from pipe import Pipe
 
 
 class Game:
-    def __init__(self, ai=True):
+    def __init__(self, ai=True, load=False):
         self.ai = ai
 
         pygame.init()
@@ -40,7 +41,11 @@ class Game:
         self.font = pygame.font.Font(None, 36)
 
         self.actions = [0, 1]  # 0: Do nothing, 1: Jump
-        self.q_table = defaultdict(lambda: [0, 0])
+        self.q_table = None
+        if load:
+            self.load_q_table()
+        else:
+            self.q_table = defaultdict(lambda: [0, 0])
 
         self.discount_factor = 0.8
         self.epsilon = 0  # Exploration rate
@@ -63,8 +68,17 @@ class Game:
             (reward + self.discount_factor * max_new_value - old_value)
         self.q_table[old_state][action] = new_value
 
+    def load_q_table(self):
+        with open('q_table.pkl', 'rb') as f:
+            self.q_table = defaultdict(lambda: [0, 0], pickle.load(f))
+
+    def save_q_table(self):
+        with open('q_table.pkl', 'wb') as f:
+            pickle.dump(dict(self.q_table), f)
+
     def get_current_state(self):
-        x = int(self.bottom_pipe.rect.x + self.pipe_width - self.bird.rect.centerx)
+        x = int(self.bottom_pipe.rect.x +
+                self.pipe_width - self.bird.rect.centerx)
         y = int(self.bottom_pipe.rect.y - self.bird.rect.centery)
         return (x, y, self.game_over)
 
@@ -177,9 +191,9 @@ class Game:
             if self.bird.rect.centery > self.bottom_pipe.rect.y:
                 y *= -1
             pygame.draw.line(self.window, "lightgreen", (self.bird.rect.centerx,
-                            self.bird.rect.centery + y), (self.bottom_pipe.rect.x + self.pipe_width, self.bottom_pipe.rect.y), 2)
+                                                         self.bird.rect.centery + y), (self.bottom_pipe.rect.x + self.pipe_width, self.bottom_pipe.rect.y), 2)
             pygame.draw.line(self.window, "lightblue", (self.bird.rect.centerx,
-                            self.bird.rect.centery), (self.bird.rect.centerx, self.bird.rect.centery + y), 2)
+                                                        self.bird.rect.centery), (self.bird.rect.centerx, self.bird.rect.centery + y), 2)
 
         self.window.blit(score_text, (10, 10))
         self.window.blit(max_score_text, (10, 35))
