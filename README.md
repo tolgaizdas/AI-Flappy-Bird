@@ -1,6 +1,6 @@
 # AI Flappy Bird using Q-Learning
 
-Traditional Flappy Bird game with an AI agent learning to play the game using Q-Learning.
+Classic Flappy Bird game with an AI agent learning to play the game using Q-Learning.
 
 Here is an example gameplay after some iterations:
 
